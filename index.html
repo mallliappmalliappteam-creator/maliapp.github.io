@@ -1983,40 +1983,40 @@ if (targetLevel <= currentLevel) {
     const userRef = doc(db, "users", auth.currentUser.uid);
 
     // تحديث Firestore
-    await runTransaction(db, async (tx) => {
+await runTransaction(db, async (tx) => {
   const userSnap = await tx.get(userRef);
-  if (!userSnap.exists()) return;
+  if (!userSnap.exists()) throw "USER_NOT_FOUND";
 
   const user = userSnap.data();
 
-  // تحديث المستخدم نفسه
+  // تحديث المستخدم
   tx.update(userRef, {
     level: targetLevel,
     balance: (user.balance || 0) - price,
     lastRewardedLevel: targetLevel
   });
 
-  // 🎁 مكافأة صاحب الدعوة
+  // 🎁 مكافأة صاحب الدعوة (اختياري)
   if (user.referredBy) {
     const inviterRef = doc(db, "users", user.referredBy);
     const inviterSnap = await tx.get(inviterRef);
-    if (!inviterSnap.exists()) return;
 
-   const reward = referralRewardsByLevel[targetLevel] || 0;
+    if (inviterSnap.exists()) {
+      const reward = referralRewardsByLevel[targetLevel] || 0;
 
-if (
-  reward > 0 &&
-  (user.lastRewardedLevel || 0) < targetLevel
-) {
-  const inviter = inviterSnap.data();
+      if (
+        reward > 0 &&
+        (user.lastRewardedLevel || 0) < targetLevel
+      ) {
+        const inviter = inviterSnap.data();
 
-  tx.update(inviterRef, {
-    balance: (inviter.balance || 0) + reward
-  });
-}
+        tx.update(inviterRef, {
+          balance: (inviter.balance || 0) + reward
+        });
+      }
+    }
   }
 });
-
     // تحديث محلي
     userData.level = targetLevel;
     userData.balance = currentBalance - price;
