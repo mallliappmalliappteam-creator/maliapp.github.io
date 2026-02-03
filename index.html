@@ -1704,6 +1704,14 @@ let unsubscribeWinBets = null;
   let unsubscribeMyBets = null; 
 let currentView = "authBox";
 let userData = {};
+ // 🎁 مكافآت الدعوة حسب مستوى المدعو
+const referralRewardsByLevel = {
+  1: 5,
+  2: 10,
+  3: 25,
+  4: 50,
+  5: 80
+};
 let matches = [];
 window.openSupport = function () {
   window.open("https://t.me/maliapp_support", "_blank");
@@ -1975,10 +1983,39 @@ if (targetLevel <= currentLevel) {
     const userRef = doc(db, "users", auth.currentUser.uid);
 
     // تحديث Firestore
-    await updateDoc(userRef, {
-      level: targetLevel,
-      balance: currentBalance - price
-    });
+    await runTransaction(db, async (tx) => {
+  const userSnap = await tx.get(userRef);
+  if (!userSnap.exists()) return;
+
+  const user = userSnap.data();
+
+  // تحديث المستخدم نفسه
+  tx.update(userRef, {
+    level: targetLevel,
+    balance: (user.balance || 0) - price,
+    lastRewardedLevel: targetLevel
+  });
+
+  // 🎁 مكافأة صاحب الدعوة
+  if (user.referredBy) {
+    const inviterRef = doc(db, "users", user.referredBy);
+    const inviterSnap = await tx.get(inviterRef);
+    if (!inviterSnap.exists()) return;
+
+   const reward = referralRewardsByLevel[targetLevel] || 0;
+
+if (
+  reward > 0 &&
+  (user.lastRewardedLevel || 0) < targetLevel
+) {
+  const inviter = inviterSnap.data();
+
+  tx.update(inviterRef, {
+    balance: (inviter.balance || 0) + reward
+  });
+}
+  }
+});
 
     // تحديث محلي
     userData.level = targetLevel;
