@@ -1705,13 +1705,15 @@ let unsubscribeWinBets = null;
 let currentView = "authBox";
 let userData = {};
  // 🎁 مكافآت الدعوة حسب مستوى المدعو
-const referralRewardsByLevel = {
+const referralMap = {
   1: 5,
   2: 10,
   3: 25,
   4: 50,
   5: 80
 };
+
+const reward = referralMap[targetLevel] || 0;
 let matches = [];
 window.openSupport = function () {
   window.open("https://t.me/maliapp_support", "_blank");
