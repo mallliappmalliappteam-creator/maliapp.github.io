@@ -1821,6 +1821,10 @@ await setDoc(doc(db,"users",cred.user.uid),{
   balance: 0,          // ✅ ضروري
   winCount: 0,
   referredBy: ref || null,
+
+  // ✅ هذا هو المهم
+  lastRewardedLevel: 0,
+
   bigRewardClaimed: false,
   createdAt: serverTimestamp()
 });
@@ -1949,35 +1953,66 @@ async function loadRewards() {
   alert("🎉 تم إضافة 100 USD إلى رصيدك");
   loadRewards();
 }
-  window.upgradeLevel = async (targetLevel, price) => {
+ const referralRewardsByLevel = {
+  1: 5,
+  2: 10,
+  3: 25,
+  4: 50,
+  5: 80
+};
+ window.upgradeLevel = async (targetLevel, price) => {
   const currentLevel = Number(userData.level) || 0;
   const currentBalance = Number(userData.balance) || 0;
 
-// 🔒 يمنع الترقية لمستوى أقل أو نفس المستوى
-if (targetLevel <= currentLevel) {
-  alert("❌ هذا المستوى مفعّل بالفعل أو أقل من مستواك");
-  return;
-} 
-
-  // 💰 التحقق من الرصيد
-  if (currentBalance < price) {
-    alert("❌ رصيدك غير كافي لإتمام الترقية");
+  if (targetLevel <= currentLevel) {
+    alert("❌ هذا المستوى مفعّل بالفعل");
     return;
   }
 
-  // تأكيد
+  if (currentBalance < price) {
+    alert("❌ رصيدك غير كافٍ");
+    return;
+  }
+
   const ok = confirm(
-    `هل تريد ترقية حسابك إلى مستوى ${targetLevel} مقابل ${price} USD؟`
+    `هل تريد الترقية إلى مستوى ${targetLevel} مقابل ${price} USD؟`
   );
   if (!ok) return;
 
   try {
     const userRef = doc(db, "users", auth.currentUser.uid);
 
-    // تحديث Firestore
-    await updateDoc(userRef, {
-      level: targetLevel,
-      balance: currentBalance - price
+    await runTransaction(db, async (tx) => {
+      const userSnap = await tx.get(userRef);
+      if (!userSnap.exists()) throw "USER_NOT_FOUND";
+
+      const user = userSnap.data();
+
+      // 1️⃣ تحديث حساب المستخدم
+      tx.update(userRef, {
+        level: targetLevel,
+        balance: (user.balance || 0) - price
+      });
+
+      // 2️⃣ مكافأة صاحب الدعوة (مرة واحدة فقط لكل مستوى)
+      if (user.referredBy && targetLevel > (user.lastRewardedLevel || 0)) {
+        const reward = referralRewardsByLevel[targetLevel] || 0;
+
+        if (reward > 0) {
+          const inviterRef = doc(db, "users", user.referredBy);
+          const inviterSnap = await tx.get(inviterRef);
+          if (inviterSnap.exists()) {
+            tx.update(inviterRef, {
+              balance: (inviterSnap.data().balance || 0) + reward
+            });
+          }
+        }
+
+        // نعلّم إنو هذا المستوى تَكافأ
+        tx.update(userRef, {
+          lastRewardedLevel: targetLevel
+        });
+      }
     });
 
     // تحديث محلي
@@ -1991,7 +2026,7 @@ if (targetLevel <= currentLevel) {
     alert("✅ تمت الترقية بنجاح 🎉");
 
   } catch (e) {
-    console.error(e);
+    console.error("UPGRADE ERROR:", e);
     alert("❌ حدث خطأ أثناء الترقية");
   }
 };
@@ -2044,6 +2079,7 @@ window.logoutUser = function () {
       console.error(error);
     });
 };
+
   /* ================= UPGRADE LEVELS ================= */
 
 const levelsData = [
