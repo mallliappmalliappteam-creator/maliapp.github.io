@@ -1630,9 +1630,14 @@ const auth = getAuth(app);
 const db = getFirestore(app);
  
 function watchMatchesResults() {
+
+  // 🔒 نوقف أي مراقبة قديمة
+  if (unsubscribeMatches) unsubscribeMatches();
+
   const q = collection(db, "matches");
 
-  onSnapshot(q, async (snap) => {
+  unsubscribeMatches = onSnapshot(q, async (snap) => {
+
     for (const docSnap of snap.docs) {
       const match = docSnap.data();
       const matchId = docSnap.id;
@@ -1689,7 +1694,7 @@ function watchMatchesResults() {
               winCount: increment(1)
             });
 
-            // 🔒 قفل نهائي
+            // 🔒 قفل نهائي للرهان
             tx.update(betDoc.ref, {
               rewarded: true
             });
@@ -1697,14 +1702,20 @@ function watchMatchesResults() {
         }
       }
     }
+
   });
 }
 /* ================= GLOBAL ================= */
+
+let unsubscribeMatches = null;   // ✅ هذا الجديد
+
 let unsubscribeWinBets = null;
-  let unsubscribeMyBets = null; 
+let unsubscribeMyBets = null;
+
 let currentView = "authBox";
 let userData = {};
 let matches = [];
+
 window.openSupport = function () {
   window.open("https://t.me/maliapp_support", "_blank");
 };
