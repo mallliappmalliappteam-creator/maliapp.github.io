@@ -1953,14 +1953,14 @@ async function loadRewards() {
   alert("🎉 تم إضافة 100 USD إلى رصيدك");
   loadRewards();
 }
- const referralRewardsByLevel = {
+const referralRewardsByLevel = {
   1: 5,
   2: 10,
-  3: 25,
-  4: 50,
-  5: 80
+  3: 15,
+  4: 20,
+  5: 30
 };
- window.upgradeLevel = async (targetLevel, price) => {
+window.upgradeLevel = async (targetLevel, price) => {
   const currentLevel = Number(userData.level) || 0;
   const currentBalance = Number(userData.balance) || 0;
 
@@ -1970,48 +1970,37 @@ async function loadRewards() {
   }
 
   if (currentBalance < price) {
-    alert("❌ رصيدك غير كافٍ");
+    alert("❌ رصيدك غير كافي");
     return;
   }
 
-  const ok = confirm(
-    `هل تريد الترقية إلى مستوى ${targetLevel} مقابل ${price} USD؟`
-  );
-  if (!ok) return;
+  if (!confirm(`ترقية إلى مستوى ${targetLevel} مقابل ${price} USD؟`)) return;
 
   try {
     const userRef = doc(db, "users", auth.currentUser.uid);
 
     await runTransaction(db, async (tx) => {
       const userSnap = await tx.get(userRef);
-      if (!userSnap.exists()) throw "USER_NOT_FOUND";
+      if (!userSnap.exists()) throw "user-not-found";
 
       const user = userSnap.data();
 
-      // 1️⃣ تحديث حساب المستخدم
+      // 🔒 تحديث المستخدم
       tx.update(userRef, {
         level: targetLevel,
         balance: (user.balance || 0) - price
       });
 
-      // 2️⃣ مكافأة صاحب الدعوة (مرة واحدة فقط لكل مستوى)
-      if (user.referredBy && targetLevel > (user.lastRewardedLevel || 0)) {
+      // 🎁 مكافأة الإحالة (بدون قراءة inviter)
+      if (user.referredBy) {
         const reward = referralRewardsByLevel[targetLevel] || 0;
 
         if (reward > 0) {
           const inviterRef = doc(db, "users", user.referredBy);
-          const inviterSnap = await tx.get(inviterRef);
-          if (inviterSnap.exists()) {
-            tx.update(inviterRef, {
-              balance: (inviterSnap.data().balance || 0) + reward
-            });
-          }
+          tx.update(inviterRef, {
+            balance: increment(reward)
+          });
         }
-
-        // نعلّم إنو هذا المستوى تَكافأ
-        tx.update(userRef, {
-          lastRewardedLevel: targetLevel
-        });
       }
     });
 
