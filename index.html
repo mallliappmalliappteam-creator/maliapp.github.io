@@ -1619,10 +1619,16 @@ import {
   runTransaction   // ✅ هنا بالضبط
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
  /* ================= GLOBAL ================= */
-let unsubscribeMatches = null;
-let unsubscribeWinBets = null;
-let unsubscribeMyBets = null;
+let unsubscribeMatches     = null;
 
+// 💰 خاص بالمكافآت (إضافة الرصيد)
+let unsubscribeRewardBets = null;
+
+// 📊 خاص بعدّ الرهانات الرابحة فقط
+let unsubscribeWinCount   = null;
+
+// (اختياري إن استعملته)
+let unsubscribeMyBets     = null;
 let currentView = "authBox";
 let userData = {};
 let matches = [];
@@ -1682,7 +1688,7 @@ window.openSupport = function () {
 };
        function watchWinningBets() {
 
-  if (unsubscribeWinBets) unsubscribeWinBets();
+  if (unsubscribeRewardBets) unsubscribeRewardBets();
 
   const q = query(
     collection(db, "bets"),
@@ -1690,13 +1696,12 @@ window.openSupport = function () {
     where("rewarded", "==", false)
   );
 
-  unsubscribeWinBets = onSnapshot(q, async (snap) => {
+  unsubscribeRewardBets = onSnapshot(q, async (snap) => {
 
     for (const betDoc of snap.docs) {
-      const bet = betDoc.data();
 
+      const bet = betDoc.data();
       const userRef = doc(db, "users", bet.userId);
-      const betRef  = betDoc.ref;
 
       await runTransaction(db, async (tx) => {
 
@@ -1716,13 +1721,11 @@ window.openSupport = function () {
         const reward = rewards[user.level] || 0;
         if (reward <= 0) return;
 
-        // 💰 إضافة الرصيد مرة واحدة
         tx.update(userRef, {
           balance: (user.balance || 0) + reward
         });
 
-        // 🔒 قفل الرهان نهائياً
-        tx.update(betRef, {
+        tx.update(betDoc.ref, {
           rewarded: true
         });
       });
@@ -2050,28 +2053,25 @@ function updateProfileUI(){
   }
 }
 function loadWinBetsCount() {
+
   if (!auth.currentUser) return;
+
+  if (unsubscribeWinCount) unsubscribeWinCount();
 
   const q = query(
     collection(db, "bets"),
     where("userId", "==", auth.currentUser.uid)
   );
 
-  if (unsubscribeWinBets) unsubscribeWinBets();
+  unsubscribeWinCount = onSnapshot(q, (snap) => {
 
-  unsubscribeWinBets = onSnapshot(q, (snap) => {
     let count = 0;
 
     snap.forEach(doc => {
-      const b = doc.data();
-      if ((b.status || "").trim().toLowerCase() === "win") {
-        count++;
-      }
+      if (doc.data().status === "win") count++;
     });
 
-    userData.winCount = count;
-winBetsCount.innerText = count;
-// ❌ ما تمسّش الرصيد هنا
+    winBetsCount.innerText = count;
   });
 }
 window.logoutUser = function () {
