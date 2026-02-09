@@ -2023,13 +2023,15 @@ function loadWinBetsCount() {
     const totalWins = snap.size;
     winBetsCount.innerText = totalWins;
 
-    const paidWins = Number(userData.paidWins || 0);
+    const userRef = doc(db, "users", auth.currentUser.uid);
+    const userSnap = await getDoc(userRef);
+    if (!userSnap.exists()) return;
 
-    // 🔒 إذا تم حذف رهانات → تجاهل
-    if (totalWins <= paidWins) {
-      updateUI();
-      return;
-    }
+    const user = userSnap.data();
+    const paidWins = Number(user.paidWins || 0);
+
+    // 🔒 إذا ما فماش wins جديدة → نخرج
+    if (totalWins <= paidWins) return;
 
     const newWins = totalWins - paidWins;
 
@@ -2041,14 +2043,12 @@ function loadWinBetsCount() {
       5: 5
     };
 
-    const reward = rewards[userData.level] || 0;
+    const reward = rewards[user.level] || 0;
     const earned = newWins * reward;
 
-    // 💰 نضيف فقط الزيادة
-    const userRef = doc(db, "users", auth.currentUser.uid);
-
+    // 💰 تحديث واحد واضح
     await updateDoc(userRef, {
-      balance: (userData.balance || 0) + earned,
+      balance: (user.balance || 0) + earned,
       paidWins: totalWins
     });
   });
