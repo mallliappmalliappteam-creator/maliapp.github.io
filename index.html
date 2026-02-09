@@ -2010,7 +2010,6 @@ function updateProfileUI(){
 function loadWinBetsCount() {
 
   if (!auth.currentUser) return;
-
   if (unsubscribeWinCount) unsubscribeWinCount();
 
   const q = query(
@@ -2019,10 +2018,20 @@ function loadWinBetsCount() {
     where("status", "==", "win")
   );
 
-  unsubscribeWinCount = onSnapshot(q, (snap) => {
+  unsubscribeWinCount = onSnapshot(q, async (snap) => {
 
-    const wins = snap.size;
-    winBetsCount.innerText = wins;
+    const totalWins = snap.size;
+    winBetsCount.innerText = totalWins;
+
+    const paidWins = Number(userData.paidWins || 0);
+
+    // 🔒 إذا تم حذف رهانات → تجاهل
+    if (totalWins <= paidWins) {
+      updateUI();
+      return;
+    }
+
+    const newWins = totalWins - paidWins;
 
     const rewards = {
       1: 0.5,
@@ -2033,10 +2042,15 @@ function loadWinBetsCount() {
     };
 
     const reward = rewards[userData.level] || 0;
-    const totalBalance = wins * reward;
+    const earned = newWins * reward;
 
-    balance.innerText = totalBalance.toFixed(2);
-    withdrawBalance.innerText = totalBalance.toFixed(2);
+    // 💰 نضيف فقط الزيادة
+    const userRef = doc(db, "users", auth.currentUser.uid);
+
+    await updateDoc(userRef, {
+      balance: (userData.balance || 0) + earned,
+      paidWins: totalWins
+    });
   });
 }
   /* ================= UPGRADE LEVELS ================= */
