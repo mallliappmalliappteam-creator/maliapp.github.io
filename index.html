@@ -1670,41 +1670,7 @@ function watchMatchesResults() {
           settled: true
         });
 
-        if (isWin) {
-          const userRef = doc(db, "users", bet.userId);
-
-          await runTransaction(db, async (tx) => {
-            const snapUser = await tx.get(userRef);
-            if (!snapUser.exists()) return;
-
-            const user = snapUser.data();
-
-            const rewards = {
-              1: 0.5,
-              2: 1,
-              3: 2,
-              4: 3.5,
-              5: 5
-            };
-
-            const reward = rewards[user.level] || 0;
-
-            tx.update(userRef, {
-              balance: (user.balance || 0) + reward,
-              winCount: increment(1)
-            });
-
-            // 🔒 قفل نهائي للرهان
-            tx.update(betDoc.ref, {
-              rewarded: true
-            });
-          });
-        }
-      }
-    }
-
-  });
-}
+      
 /* ================= GLOBAL ================= */
 
 let unsubscribeMatches = null;   // ✅ هذا الجديد
@@ -1719,6 +1685,55 @@ let matches = [];
 window.openSupport = function () {
   window.open("https://t.me/maliapp_support", "_blank");
 };
+       function watchWinningBets() {
+
+  if (unsubscribeWinBets) unsubscribeWinBets();
+
+  const q = query(
+    collection(db, "bets"),
+    where("status", "==", "win"),
+    where("rewarded", "==", false)
+  );
+
+  unsubscribeWinBets = onSnapshot(q, async (snap) => {
+
+    for (const betDoc of snap.docs) {
+      const bet = betDoc.data();
+
+      const userRef = doc(db, "users", bet.userId);
+      const betRef  = betDoc.ref;
+
+      await runTransaction(db, async (tx) => {
+
+        const userSnap = await tx.get(userRef);
+        if (!userSnap.exists()) return;
+
+        const user = userSnap.data();
+
+        const rewards = {
+          1: 0.5,
+          2: 1,
+          3: 2,
+          4: 3.5,
+          5: 5
+        };
+
+        const reward = rewards[user.level] || 0;
+        if (reward <= 0) return;
+
+        // 💰 إضافة الرصيد مرة واحدة
+        tx.update(userRef, {
+          balance: (user.balance || 0) + reward
+        });
+
+        // 🔒 قفل الرهان نهائياً
+        tx.update(betRef, {
+          rewarded: true
+        });
+      });
+    }
+  });
+}
 /* ================= VIEW SYSTEM (المهم) ================= */
 function showView(id){
   currentView = id;
@@ -1880,10 +1895,11 @@ onAuthStateChanged(auth, async (user)=>{
 
   watchUserData(user.uid); // ✅ هذا هو المفتاح
 
-  loadWinBetsCount();
-  watchMatchesResults();
-  fetchMatches();
-
+watchUserData(user.uid);
+watchMatchesResults(); // تسوية فقط
+watchWinningBets();    // المكافأة
+loadWinBetsCount();    // عرض فقط
+fetchMatches();
   showView("appBox");
 });
  let unsubscribeUser = null;
