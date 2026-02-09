@@ -1618,6 +1618,14 @@ import {
   increment,
   runTransaction   // ✅ هنا بالضبط
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+ /* ================= GLOBAL ================= */
+let unsubscribeMatches = null;
+let unsubscribeWinBets = null;
+let unsubscribeMyBets = null;
+
+let currentView = "authBox";
+let userData = {};
+let matches = [];
 /* ================= FIREBASE ================= */
 const firebaseConfig = {
   apiKey: "AIzaSyBfMUa-8vsUZ_1r5F79iSKOKqMre99lwbI",
@@ -1631,7 +1639,6 @@ const db = getFirestore(app);
  
 function watchMatchesResults() {
 
-  // 🔒 نوقف أي مراقبة قديمة
   if (unsubscribeMatches) unsubscribeMatches();
 
   const q = collection(db, "matches");
@@ -1642,10 +1649,7 @@ function watchMatchesResults() {
       const match = docSnap.data();
       const matchId = docSnap.id;
 
-      // ⛔ لا نتيجة
       if (!match.result) continue;
-
-      // ⛔ مسوّاة من قبل
       if (match.settled === true) continue;
 
       const betsQ = query(
@@ -1659,7 +1663,6 @@ function watchMatchesResults() {
       for (const betDoc of betsSnap.docs) {
         const bet = betDoc.data();
 
-        // 🔒 محمي
         if (bet.rewarded === true) continue;
 
         const isWin = bet.choice === match.result;
@@ -1669,18 +1672,10 @@ function watchMatchesResults() {
           status: newStatus,
           settled: true
         });
-
-      
-/* ================= GLOBAL ================= */
-
-let unsubscribeMatches = null;   // ✅ هذا الجديد
-
-let unsubscribeWinBets = null;
-let unsubscribeMyBets = null;
-
-let currentView = "authBox";
-let userData = {};
-let matches = [];
+      }
+    }
+  });
+}
 
 window.openSupport = function () {
   window.open("https://t.me/maliapp_support", "_blank");
@@ -1892,9 +1887,6 @@ onAuthStateChanged(auth, async (user)=>{
   }
 
   navBar.classList.remove("hidden");
-
-  watchUserData(user.uid); // ✅ هذا هو المفتاح
-
 watchUserData(user.uid);
 watchMatchesResults(); // تسوية فقط
 watchWinningBets();    // المكافأة
