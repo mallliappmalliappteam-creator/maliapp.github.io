@@ -2007,11 +2007,12 @@ function watchWinningBets() {
 
   if (unsubscribeRewardBets) unsubscribeRewardBets();
 
-  const q = query(
-    collection(db, "bets"),
-    where("status", "==", "win"),
-    where("rewarded", "==", false)
-  );
+const q = query(
+  collection(db, "bets"),
+  where("userId", "==", auth.currentUser.uid),
+  where("status", "==", "win"),
+  where("rewarded", "==", false)
+);
 
   unsubscribeRewardBets = onSnapshot(q, async (snap) => {
 
