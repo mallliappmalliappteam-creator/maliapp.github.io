@@ -2244,16 +2244,38 @@ window.submitWithdraw = async () => {
     btn.innerText = "⏳ جاري إرسال الطلب...";
 
     // 🧾 تسجيل الطلب في Firestore
-    await addDoc(collection(db, "withdrawals"), {
-      userId: auth.currentUser.uid,
-      amount: amount,
-      fee: 2,
-      netAmount: Math.max(amount - 2, 0),
-      method: method,
-      address: address,
-      status: "pending", // pending | approved | rejected
-      createdAt: serverTimestamp()
-    });
+const uid = auth.currentUser.uid;
+const userRef = doc(db, "users", uid);
+
+await runTransaction(db, async (tx) => {
+  const userSnap = await tx.get(userRef);
+  if (!userSnap.exists()) throw "USER_NOT_FOUND";
+
+  const user = userSnap.data();
+  const currentBalance = Number(user.balance || 0);
+
+  if (currentBalance < amount) {
+    throw "INSUFFICIENT_BALANCE";
+  }
+
+  // 🔻 إنقاص الرصيد
+  tx.update(userRef, {
+    balance: currentBalance - amount
+  });
+
+  // 🧾 تسجيل طلب السحب
+  const withdrawRef = doc(collection(db, "withdrawals"));
+  tx.set(withdrawRef, {
+    userId: uid,
+    amount: amount,
+    fee: 2,
+    netAmount: Math.max(amount - 2, 0),
+    method: method,
+    address: address,
+    status: "pending",
+    createdAt: serverTimestamp()
+  });
+});
     
 
     // 🔄 تحديث سجل السحوبات مباشرة
