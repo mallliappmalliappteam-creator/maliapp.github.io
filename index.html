@@ -1983,9 +1983,7 @@ window.upgradeLevel = async (targetLevel, price) => {
     userData.level = targetLevel;
     userData.balance = currentBalance - price;
 
-    updateUI();
-    updateProfileUI();
-    renderLevels();
+     renderLevels();
 
     alert("✅ تمت الترقية بنجاح 🎉");
 
@@ -2255,12 +2253,6 @@ window.submitWithdraw = async () => {
       status: "pending", // pending | approved | rejected
       createdAt: serverTimestamp()
     });
-
-    // 💰 خصم الرصيد من المستخدم
-    await updateDoc(doc(db, "users", auth.currentUser.uid), {
-      balance: (userData.balance || 0) - amount
-    });
-
     userData.balance -= amount;
     updateUI();
 
