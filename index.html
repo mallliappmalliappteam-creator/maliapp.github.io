@@ -2005,24 +2005,25 @@ function updateProfileUI(){
 }
 function watchWinningBets() {
 
-  if (unsubscribeRewardBets) unsubscribeRewardBets();
+  // ⛔ نغلق أي listener قديم
+  if (unsubscribeWinningBets) {
+    unsubscribeWinningBets();
+    unsubscribeWinningBets = null;
+  }
 
-const q = query(
-  collection(db, "bets"),
-  where("userId", "==", auth.currentUser.uid),
-  where("status", "==", "win"),
-  where("rewarded", "==", false)
-);
+  const q = query(
+    collection(db, "bets"),
+    where("userId", "==", auth.currentUser.uid),
+    where("status", "==", "win"),
+    where("rewarded", "==", false)
+  );
 
-  unsubscribeRewardBets = onSnapshot(q, async (snap) => {
-
+  unsubscribeWinningBets = onSnapshot(q, async (snap) => {
     for (const betDoc of snap.docs) {
-
       const bet = betDoc.data();
       const userRef = doc(db, "users", bet.userId);
 
       await runTransaction(db, async (tx) => {
-
         const userSnap = await tx.get(userRef);
         if (!userSnap.exists()) return;
 
@@ -2039,12 +2040,14 @@ const q = query(
         const reward = rewards[user.level] || 0;
         if (reward <= 0) return;
 
-        // ✅ زيادة مرة واحدة فقط
+        // 🔒 تأكيد أخير
+        const betSnap = await tx.get(betDoc.ref);
+        if (betSnap.data().rewarded === true) return;
+
         tx.update(userRef, {
           balance: (user.balance || 0) + reward
         });
 
-        // 🔒 نغلق الرهان
         tx.update(betDoc.ref, {
           rewarded: true
         });
