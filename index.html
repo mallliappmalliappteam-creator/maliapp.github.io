@@ -1928,13 +1928,6 @@ async function loadRewards() {
   alert("🎉 تم إضافة 100 USD إلى رصيدك");
   loadRewards();
 }
-const referralRewardsByLevel = {
-  1: 5,    // مستوى 1 ➜ 5 USD
-  2: 10,   // مستوى 2 ➜ 10 USD
-  3: 25,   // مستوى 3 ➜ 25 USD
-  4: 50,   // مستوى 4 ➜ 50 USD
-  5: 80    // مستوى 5 ➜ 80 USD
-};
 window.upgradeLevel = async (targetLevel, price) => {
   const currentLevel = Number(userData.level) || 0;
   const currentBalance = Number(userData.balance) || 0;
@@ -1956,35 +1949,22 @@ window.upgradeLevel = async (targetLevel, price) => {
 
     await runTransaction(db, async (tx) => {
       const userSnap = await tx.get(userRef);
-      if (!userSnap.exists()) throw "user-not-found";
+      if (!userSnap.exists()) throw "USER_NOT_FOUND";
 
       const user = userSnap.data();
 
-      // 🔒 تحديث المستخدم
+      // ✅ تعديل المستخدم نفسه فقط
       tx.update(userRef, {
         level: targetLevel,
         balance: (user.balance || 0) - price
       });
-
-      // 🎁 مكافأة الإحالة (بدون قراءة inviter)
-      if (user.referredBy) {
-        const reward = referralRewardsByLevel[targetLevel] || 0;
-
-        if (reward > 0) {
-          const inviterRef = doc(db, "users", user.referredBy);
-          tx.update(inviterRef, {
-            balance: increment(reward)
-          });
-        }
-      }
     });
 
     // تحديث محلي
     userData.level = targetLevel;
     userData.balance = currentBalance - price;
 
-     renderLevels();
-
+    renderLevels();
     alert("✅ تمت الترقية بنجاح 🎉");
 
   } catch (e) {
