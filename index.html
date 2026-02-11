@@ -1906,6 +1906,9 @@ function watchUserData(uid) {
 
     updateUI();
     updateProfileUI();
+   if (isAdmin()) {
+  document.getElementById("adminPanel").style.display = "block";
+}
   });
 } 
   window.openRewards = async () => {
