@@ -1655,13 +1655,16 @@ function watchMatchesResults() {
       const match = docSnap.data();
       const matchId = docSnap.id;
 
-      // ✅ لازم تكون عندها نتيجة
+      // ⛔ لازم تكون عندها نتيجة
       if (!match.result) continue;
+
+      // ⛔ وما تكونش already settled
+      if (match.settled === true) continue;
 
       const betsQ = query(
         collection(db, "bets"),
         where("matchId", "==", matchId),
-        where("settled", "==", false)
+        where("status", "==", "pending")
       );
 
       const betsSnap = await getDocs(betsQ);
@@ -1677,6 +1680,11 @@ function watchMatchesResults() {
           settled: true
         });
       }
+
+      // ✅ مهم جداً: نسكّر المباراة بعد التسوية
+      await updateDoc(docSnap.ref, {
+        settled: true
+      });
     }
   });
 }
