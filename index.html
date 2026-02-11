@@ -1333,6 +1333,14 @@ top: -6px;
       طلب سحب
     </button>
   </div>
+ <div id="adminPanel" style="display:none;">
+  <h3>لوحة التحكم</h3>
+
+  <input type="text" id="targetUserId" placeholder="User UID">
+  <input type="number" id="adminBalance" placeholder="New Balance">
+
+  <button onclick="adminUpdateBalance()">تحديث الرصيد</button>
+</div>
 
 
 <div class="profile-logout">
@@ -1691,6 +1699,9 @@ function watchMatchesResults() {
 window.openSupport = function () {
   window.open("https://t.me/maliapp_support", "_blank");
 };
+ function isAdmin() {
+  return userData.role === "admin";
+}
 
 /* ================= VIEW SYSTEM (المهم) ================= */
 function showView(id){
@@ -1727,6 +1738,29 @@ window.openTab = function(btn, viewId){
     loadRewards();
   }
 };
+window.adminUpdateBalance = async () => {
+  try {
+    const uid = document.getElementById("targetUserId").value.trim();
+    const newBalance = Number(document.getElementById("adminBalance").value);
+
+    if (!uid || isNaN(newBalance)) {
+      alert("❌ تحقق من البيانات");
+      return;
+    }
+
+    const userRef = doc(db, "users", uid);
+
+    await updateDoc(userRef, {
+      balance: newBalance
+    });
+
+    alert("✅ تم تعديل الرصيد بنجاح");
+
+  } catch (e) {
+    console.error(e);
+    alert("❌ خطأ");
+  }
+}; 
 
 /* ================= DOM ================= */
 const balance = document.getElementById("balance");
