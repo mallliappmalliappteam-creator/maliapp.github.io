@@ -1655,21 +1655,19 @@ function watchMatchesResults() {
       const match = docSnap.data();
       const matchId = docSnap.id;
 
+      // ✅ لازم تكون عندها نتيجة
       if (!match.result) continue;
-      if (match.settled === true) continue;
 
       const betsQ = query(
         collection(db, "bets"),
         where("matchId", "==", matchId),
-        where("status", "==", "pending")
+        where("settled", "==", false)
       );
 
       const betsSnap = await getDocs(betsQ);
 
       for (const betDoc of betsSnap.docs) {
         const bet = betDoc.data();
-
-        if (bet.rewarded === true) continue;
 
         const isWin = bet.choice === match.result;
         const newStatus = isWin ? "win" : "lose";
@@ -1682,7 +1680,6 @@ function watchMatchesResults() {
     }
   });
 }
-
 window.openSupport = function () {
   window.open("https://t.me/maliapp_support", "_blank");
 };
