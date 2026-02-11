@@ -2588,8 +2588,24 @@ function openSupport(){
   window.open("https://t.me/maliapp_support", "_blank");
 } 
 /* ================= LOGOUT ================= */
-window.logout = async ()=>{
-  await signOut(auth);
+window.logoutUser = async () => {
+  try {
+
+    if (unsubscribeMatches) unsubscribeMatches();
+    if (unsubscribeWinningBets) unsubscribeWinningBets();
+    if (unsubscribeWinCount) unsubscribeWinCount();
+    if (unsubscribeMyBets) unsubscribeMyBets();
+    if (unsubscribeUser) unsubscribeUser();
+
+    await signOut(auth);
+
+    showView("authBox");
+    navBar.classList.add("hidden");
+
+  } catch (e) {
+    console.error("LOGOUT ERROR:", e);
+    alert("❌ حدث خطأ أثناء تسجيل الخروج");
+  }
 };
 </script>
 
