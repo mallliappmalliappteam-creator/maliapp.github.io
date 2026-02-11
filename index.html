@@ -2020,9 +2020,13 @@ function updateProfileUI(){
   profileLevel.innerText = levelName.innerText;
 
   const uid = auth.currentUser?.uid;
+
   if (uid) {
     referralLink.value =
       `${location.origin}${location.pathname}?ref=${uid}`;
+
+    // ✅ هذا هو السطر الناقص
+    document.getElementById("profileId").innerText = uid;
   }
 }
 function watchWinningBets() {
