@@ -1333,14 +1333,17 @@ top: -6px;
       طلب سحب
     </button>
   </div>
- <div id="adminPanel" style="display:none;">
-  <h3>لوحة التحكم</h3>
+<div id="adminPanel" class="level-card" style="display:none;">
+  <h4>🔐 لوحة تحكم الأدمن</h4>
 
-  <input type="text" id="targetUserId" placeholder="User UID">
-  <input type="number" id="adminBalance" placeholder="Amount to Add">
-  <button onclick="adminUpdateBalance()">تحديث الرصيد</button>
+  <input type="text" id="searchEmail" placeholder="ابحث بالإيميل">
+  <button onclick="adminSearchUser()">بحث</button>
+
+  <div id="adminResult" style="margin-top:10px;"></div>
+
+  <input type="number" id="adminAmount" placeholder="المبلغ للإضافة">
+  <button onclick="adminAddBalance()">إضافة رصيد</button>
 </div>
-
 
 <div class="profile-logout">
   <button onclick="logoutUser()" class="logout-btn">
@@ -1737,28 +1740,50 @@ window.openTab = function(btn, viewId){
     loadRewards();
   }
 };
-window.adminUpdateBalance = async () => {
-  try {
-    const uid = document.getElementById("targetUserId").value.trim();
-    const amount = Number(document.getElementById("adminBalance").value);
+let adminTargetUser = null;
 
-    if (!uid || isNaN(amount)) {
-      alert("❌ تحقق من البيانات");
-      return;
-    }
+window.adminSearchUser = async () => {
+  const email = document.getElementById("searchEmail").value.trim();
+  if (!email) return alert("أدخل إيميل");
 
-    const userRef = doc(db, "users", uid);
+  const q = query(
+    collection(db, "users"),
+    where("email", "==", email)
+  );
 
-    await updateDoc(userRef, {
-      balance: increment(amount)   // ✅ يضيف المبلغ
-    });
+  const snap = await getDocs(q);
 
-    alert("✅ تم إضافة الرصيد بنجاح");
-
-  } catch (e) {
-    console.error(e);
-    alert("❌ خطأ");
+  if (snap.empty) {
+    alert("❌ المستخدم غير موجود");
+    return;
   }
+
+  const docSnap = snap.docs[0];
+  adminTargetUser = docSnap.id;
+
+  const data = docSnap.data();
+
+  document.getElementById("adminResult").innerHTML = `
+    <p>👤 ${data.email}</p>
+    <p>💰 الرصيد الحالي: ${data.balance || 0} USD</p>
+  `;
+};
+
+window.adminAddBalance = async () => {
+  const amount = Number(document.getElementById("adminAmount").value);
+
+  if (!adminTargetUser || isNaN(amount)) {
+    alert("❌ تحقق من البيانات");
+    return;
+  }
+
+  const userRef = doc(db, "users", adminTargetUser);
+
+  await updateDoc(userRef, {
+    balance: increment(amount)
+  });
+
+  alert("✅ تم إضافة الرصيد بنجاح");
 };
 
 /* ================= DOM ================= */
