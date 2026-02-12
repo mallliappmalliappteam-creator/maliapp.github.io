@@ -1337,8 +1337,7 @@ top: -6px;
   <h3>لوحة التحكم</h3>
 
   <input type="text" id="targetUserId" placeholder="User UID">
-  <input type="number" id="adminBalance" placeholder="New Balance">
-
+  <input type="number" id="adminBalance" placeholder="Amount to Add">
   <button onclick="adminUpdateBalance()">تحديث الرصيد</button>
 </div>
 
@@ -1741,9 +1740,9 @@ window.openTab = function(btn, viewId){
 window.adminUpdateBalance = async () => {
   try {
     const uid = document.getElementById("targetUserId").value.trim();
-    const newBalance = Number(document.getElementById("adminBalance").value);
+    const amount = Number(document.getElementById("adminBalance").value);
 
-    if (!uid || isNaN(newBalance)) {
+    if (!uid || isNaN(amount)) {
       alert("❌ تحقق من البيانات");
       return;
     }
@@ -1751,16 +1750,16 @@ window.adminUpdateBalance = async () => {
     const userRef = doc(db, "users", uid);
 
     await updateDoc(userRef, {
-      balance: newBalance
+      balance: increment(amount)   // ✅ يضيف المبلغ
     });
 
-    alert("✅ تم تعديل الرصيد بنجاح");
+    alert("✅ تم إضافة الرصيد بنجاح");
 
   } catch (e) {
     console.error(e);
     alert("❌ خطأ");
   }
-}; 
+};
 
 /* ================= DOM ================= */
 const balance = document.getElementById("balance");
