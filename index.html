@@ -1961,11 +1961,9 @@ function watchUserData(uid) {
 
     updateUI();
     updateProfileUI();
-   if (isAdmin()) {
+  if (isAdmin()) {
   document.getElementById("adminPanel").style.display = "block";
-}
-  watchWithdrawRequests(); 
-  });
+  watchWithdrawRequests();   // ⬅️ نخليها هنا فقط
 } 
   window.openRewards = async () => {
   showView("rewardsBox");
