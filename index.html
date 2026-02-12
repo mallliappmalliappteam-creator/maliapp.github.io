@@ -2143,8 +2143,6 @@ function watchWinningBets() {
 function watchWithdrawRequests() {
 
   const container = document.getElementById("withdrawRequests");
-
-  // ⛔ لو العنصر مش موجود ما تعملش حاجة
   if (!container) return;
 
   if (unsubscribeWithdrawals) {
@@ -2161,17 +2159,41 @@ function watchWithdrawRequests() {
 
     container.innerHTML = "";
 
+    if (snapshot.empty) {
+      container.innerHTML = "<p>لا توجد طلبات سحب</p>";
+      return;
+    }
+
     for (const docSnap of snapshot.docs) {
 
       const data = docSnap.data();
 
       const userDoc = await getDoc(doc(db, "users", data.userId));
-      const userData = userDoc.data();
+      const userData = userDoc.exists() ? userDoc.data() : null;
+
+      const email = userData?.email || "غير معروف";
 
       container.innerHTML += `
-        <div>
-          <p>${userData?.email || "بدون إيميل"}</p>
-          <p>${data.amount} USD</p>
+        <div style="border:1px solid #444;padding:10px;margin:10px 0;border-radius:8px;background:#1a1a1a;">
+          
+          <p>👤 <b>${email}</b></p>
+          <p>💰 <b>${data.amount} USD</b></p>
+          <p>💳 Wallet: <code>${data.walletAddress || "غير موجود"}</code></p>
+
+          <p>📅 ${
+            data.createdAt?.toDate
+              ? data.createdAt.toDate().toLocaleString("ar-TN")
+              : "..."
+          }</p>
+
+          <button onclick="approveWithdraw('${docSnap.id}', '${data.userId}', ${data.amount})">
+            ✅ قبول
+          </button>
+
+          <button onclick="rejectWithdraw('${docSnap.id}', '${data.userId}', ${data.amount})">
+            ❌ رفض
+          </button>
+
         </div>
       `;
     }
