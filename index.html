@@ -2164,21 +2164,24 @@ function watchWithdrawRequests() {
       const userDoc = await getDoc(doc(db, "users", data.userId));
       const userData = userDoc.data();
 
-      container.innerHTML += `
-        <div style="border:1px solid #444;padding:10px;margin:10px 0;border-radius:8px;">
-          <p>👤 ${userData.email}</p>
-          <p>💰 ${data.amount} USD</p>
-          <p>📅 ${new Date(data.createdAt?.seconds * 1000).toLocaleString()}</p>
+     container.innerHTML += `
+  <div style="border:1px solid #444;padding:10px;margin:10px 0;border-radius:8px;background:#1a1a1a;">
+    <p>👤 <b>${userData.email}</b></p>
+    <p>💰 <b>${data.amount} USD</b></p>
+    <p>💳 Wallet: <code>${data.walletAddress || "غير موجود"}</code></p>
+    <p>📅 ${data.createdAt?.seconds 
+        ? new Date(data.createdAt.seconds * 1000).toLocaleString() 
+        : "..."}</p>
 
-          <button onclick="approveWithdraw('${docSnap.id}', '${data.userId}', ${data.amount})">
-            ✅ قبول
-          </button>
+    <button onclick="approveWithdraw('${docSnap.id}')">
+      ✅ قبول
+    </button>
 
-          <button onclick="rejectWithdraw('${docSnap.id}', '${data.userId}', ${data.amount})">
-            ❌ رفض
-          </button>
-        </div>
-      `;
+    <button onclick="rejectWithdraw('${docSnap.id}', '${data.userId}', ${data.amount})">
+      ❌ رفض
+    </button>
+  </div>
+`;
     }
   });
 }
