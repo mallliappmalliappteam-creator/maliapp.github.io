@@ -1379,7 +1379,7 @@ top: -6px;
   الرصيد المتاح للسحب
 </p>
     <h2><span id="withdrawBalance">0</span> USDT</h2>
-    <p class="warning">الحد الأدنى للسحب: 20 USDT</p>
+<p class="warning" id="minWithdrawText"></p>
   </div>
 
   <!-- 🔥 فورم السحب -->
@@ -2349,6 +2349,18 @@ box.innerHTML += `
     });
   });
 }
+function getMinWithdrawByLevel(level) {
+
+  const limits = {
+    1: 70,
+    2: 140,
+    3: 290,
+    4: 520,
+    5: 720
+  };
+
+  return limits[level] || 999999;
+} 
 /* ================= WITHDRAW ================= */
 
 window.openWithdraw = async ()=>{
@@ -2368,10 +2380,13 @@ window.submitWithdraw = async () => {
     const agree   = document.getElementById("agreeWithdraw").checked;
 
     // ✅ التحقق
-    if (!amount || amount < 20) {
-      alert("❌ الحد الأدنى للسحب هو 20 USDT");
-      return;
-    }
+   const userLevel = Number(userData.level) || 0;
+const minWithdraw = getMinWithdrawByLevel(userLevel);
+
+if (!amount || amount < minWithdraw) {
+  alert(`❌ الحد الأدنى للسحب لمستواك هو ${minWithdraw} USDT`);
+  return;
+}
 
     if (amount > (userData.balance || 0)) {
       alert("❌ رصيدك غير كاف");
