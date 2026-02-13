@@ -1333,6 +1333,7 @@ top: -6px;
       طلب سحب
     </button>
   </div>
+
 <div id="adminPanel" class="level-card" style="display:none;">
   <h4>🔐 لوحة تحكم الأدمن</h4>
 
@@ -1343,12 +1344,13 @@ top: -6px;
 
   <input type="number" id="adminAmount" placeholder="المبلغ للإضافة">
   <button onclick="adminAddBalance()">إضافة رصيد</button>
+
+  <hr>
+
+  <h4>📤 طلبات السحب</h4>
+  <div id="withdrawRequests"></div>
+
 </div>
-<hr>
-
-<h4>📤 طلبات السحب</h4>
-
-<div id="withdrawRequests"></div> 
 
 <div class="profile-logout">
   <button onclick="logoutUser()" class="logout-btn">
