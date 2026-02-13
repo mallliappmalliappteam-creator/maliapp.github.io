@@ -2365,12 +2365,15 @@ function getMinWithdrawByLevel(level) {
 
 window.openWithdraw = async ()=>{
   showView("withdrawBox");
+
   withdrawBalance.innerText = userData.balance ?? 0;
 
-  // ✅ تحميل سجل طلبات السحب
+  const minWithdraw = getMinWithdrawByLevel(Number(userData.level) || 0);
+  document.getElementById("minWithdrawText").innerText =
+    `الحد الأدنى للسحب لهذا المستوى: ${minWithdraw} USDT`;
+
   await loadWithdrawHistory();
 };
-
 // إرسال طلب سحب
 window.submitWithdraw = async () => {
   try {
